@@ -9,7 +9,7 @@ const 탭 = [
 ];
 
 // 채점 기준을 화면에 그대로 띄웁니다. 보는 사람이 찾아다니지 않게.
-const 검증 = ["두 블록 연계 (식당 ➔ 택시)", "도착지 자동 이월", "슬롯 자유 수정"];
+const 검증 = ["두 블록 연계 (장소 ➔ 택시)", "도착지 자동 이월", "슬롯 자유 수정"];
 
 export function Nav() {
   const path = usePathname();
@@ -22,13 +22,13 @@ export function Nav() {
               <span className="text-base leading-none">🚕</span>
               <span className="hero-taxi">TAXI</span>
               <span className="text-white/50">·</span>
-              <span className="text-white/70">식당 + 택시</span>
+              <span className="text-white/70">식당 · 숙소 · 관광</span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              식당 접수 <span className="hero-taxi">➔</span> 택시 배차
+              장소 접수 <span className="hero-taxi">➔</span> 택시 배차
             </h1>
             <p className="mt-2 text-sm text-white/60">
-              식당을 예약하면 택시 도착지가 저절로 채워집니다. 웹과 봇이 같은 창고를 씁니다.
+              식당 · 숙소 · 관광 중에 하나를 정하면 택시 도착지가 저절로 채워집니다. 웹과 봇이 같은 창고를 씁니다.
             </p>
           </div>
 
@@ -76,7 +76,7 @@ export function Nav() {
 // 1 → 2 → 3 진행 표시
 export function Steps({ 지금 }: { 지금: 1 | 2 | 3 }) {
   const 단계 = [
-    { n: 1, label: "식당 접수", sub: "조건 → 검색 → 예약" },
+    { n: 1, label: "장소 접수", sub: "식당 · 숙소 · 관광" },
     { n: 2, label: "택시 배차", sub: "도착지 이월 → 호출" },
     { n: 3, label: "배차 확정", sub: "기사 배정 · 수정 가능" },
   ];

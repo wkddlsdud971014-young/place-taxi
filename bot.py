@@ -330,14 +330,14 @@ def 새로시작():
     return [], 상자, 현황(상자), ""
 
 
-with gr.Blocks(title="식당 + 택시 (봇)", theme=THEME, css=CSS) as demo:
-    gr.Markdown("# 식당 예약하고 택시 부르기\n<span class='muted'>말로 하세요. 한 번에 여러 개 말해도 됩니다.</span>")
+with gr.Blocks(title="장소 + 택시 (봇)", theme=THEME, css=CSS) as demo:
+    gr.Markdown("# 장소 예약하고 택시 부르기\n<span class='muted'>말로 하세요. 한 번에 여러 개 말해도 됩니다.</span>")
     상자 = gr.State(빈상자())
 
     with gr.Row():
         with gr.Column(scale=2):
             화면 = gr.Chatbot(type="messages", height=460)
-            입력 = gr.Textbox(placeholder="예) 서울 서쪽에 저렴한 한식집 찾아주세요", label="", submit_btn=True)
+            입력 = gr.Textbox(placeholder="예) 헬스장 있는 숙소 찾아주세요", label="", submit_btn=True)
             새로btn = gr.Button("새로 시작")
         with gr.Column(scale=1, elem_classes="card"):
             판 = gr.Markdown(현황(빈상자()), elem_classes="result")

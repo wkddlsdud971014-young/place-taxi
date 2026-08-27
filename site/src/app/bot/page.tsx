@@ -15,13 +15,13 @@ export default function BotPage() {
             <Badge variant="secondary">Gradio</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            &ldquo;서울 서쪽에 저렴한 한식집 찾아줘&rdquo; → &ldquo;1번&rdquo; →
+            &ldquo;헬스장 있는 숙소 찾아줘&rdquo; → &ldquo;1번&rdquo; →
             &ldquo;강남역에서 19시에 택시&rdquo; 처럼 이어서 말하면 됩니다.
             <br />
             <span className="font-medium text-foreground">
               &ldquo;거기로 가는 택시&rdquo;
             </span>{" "}
-            처럼 식당 이름을 다시 말하지 않아도 알아듣습니다.
+            처럼 장소 이름을 다시 말하지 않아도 알아듣습니다.
           </p>
         </CardHeader>
         <CardContent>

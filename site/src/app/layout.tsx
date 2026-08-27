@@ -3,8 +3,8 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
-  title: "식당 + 택시",
-  description: "식당을 예약하면 택시 도착지가 저절로 채워집니다",
+  title: "장소 + 택시",
+  description: "장소를 예약하면 택시 도착지가 저절로 채워집니다",
 };
 
 export default function RootLayout({

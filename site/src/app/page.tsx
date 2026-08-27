@@ -132,7 +132,7 @@ export default function Home() {
 
   const 예약 = async () => {
     const 가게 = 후보.find((r) => r.name === 고른것);
-    if (!가게) return set안내("먼저 식당을 검색해서 하나 고르세요.");
+    if (!가게) return set안내("먼저 장소를 검색해서 하나 고르세요.");
     set바쁨(true);
     const code = makeBookingCode();
     set식당(가게); set예약번호(code);
@@ -284,7 +284,7 @@ export default function Home() {
             )}
 
             <Button className="w-full" onClick={예약} disabled={바쁨 || !고른것}>
-              이 식당 예약
+              이 장소 예약
             </Button>
 
             {식당 && (
@@ -308,7 +308,7 @@ export default function Home() {
               {ride && <Badge className="ml-auto bg-green-600 hover:bg-green-600">{ride.status}</Badge>}
             </div>
             <CardDescription>
-              식당을 예약하면 <span className="font-medium text-foreground">도착지가 저절로 채워집니다</span>.
+              장소를 예약하면 <span className="font-medium text-foreground">도착지가 저절로 채워집니다</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -335,7 +335,7 @@ export default function Home() {
               </Label>
               <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)}
                      className={식당 && dropoff === 식당.name ? "carry-input" : ""}
-                     placeholder="식당을 예약하면 채워집니다" />
+                     placeholder="장소를 예약하면 채워집니다" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">출발 시간</Label>

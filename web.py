@@ -143,8 +143,8 @@ def 취소(ride_id):
 # ================================================================
 #  화면
 # ================================================================
-with gr.Blocks(title="식당 + 택시 (웹)", theme=THEME, css=CSS) as demo:
-    gr.Markdown("# 식당 예약하고 택시 부르기\n<span class='muted'>칸을 채우고 버튼을 누르세요. 식당을 예약하면 도착지가 저절로 채워집니다.</span>")
+with gr.Blocks(title="장소 + 택시 (웹)", theme=THEME, css=CSS) as demo:
+    gr.Markdown("# 장소 예약하고 택시 부르기\n<span class='muted'>칸을 채우고 버튼을 누르세요. 장소를 예약하면 도착지가 저절로 채워집니다.</span>")
     현재호출 = gr.State(None)
     고른식당 = gr.State(None)
     예약번호 = gr.State(None)
