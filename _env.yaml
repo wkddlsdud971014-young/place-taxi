@@ -1,0 +1,19 @@
+python_min: "3.10"
+venv_dir: ".venv"
+packages:
+  - "gradio<6"
+  - "huggingface_hub<0.26"
+  - "google-generativeai"
+  - "python-dotenv"
+import_check:
+  - gradio
+  - google.generativeai
+  - dotenv
+env_file:
+  example: ".env.example"
+  required_keys:
+    - GEMINI_API_KEY
+model: "gemini-3.5-flash-lite"
+entry: "app.py"
+reset: "reset.py"
+expect_url: "127.0.0.1"
