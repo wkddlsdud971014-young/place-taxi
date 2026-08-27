@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Flow Diagram - 보고 그리는 밑그림</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #fff; color: #111;
+         font: 14px/1.6 -apple-system, "Pretendard", "Apple SD Gothic Neo", sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 28px 0 10px; padding-bottom: 6px;
+       border-bottom: 1px solid #ddd; color: #555; font-weight: 600; }
+  .sub { color: #777; margin: 0 0 20px; font-size: 13px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .box { border: 1.5px solid #111; border-radius: 6px; padding: 8px 12px;
+         background: #fff; min-width: 92px; text-align: center; }
+  .box b { display: block; font-size: 13px; }
+  .box span { font-size: 11px; color: #666; }
+  .fill { background: #f5f5f5; }
+  .dash { border-style: dashed; }
+  .arrow { font-size: 17px; color: #111; }
+  .back { color: #c00; font-weight: 700; }
+  .note { font-size: 12px; color: #777; margin: 4px 0 0 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: #f7f7f7; font-weight: 600; width: 120px; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: #666; margin-bottom: 18px;
+            flex-wrap: wrap; }
+  .legend i { font-style: normal; }
+  ol { margin: 6px 0 0 18px; padding: 0; }
+  li { margin-bottom: 3px; }
+  .key { background: #fffbe6; border: 1.5px solid #e0b400; }
+  @media print { body { padding: 12px; } h2 { page-break-after: avoid; } }
+</style>
+
+<h1>Flow Diagram — 보고 그리는 밑그림</h1>
+<p class="sub">장소 접수 ➔ 택시 배차 · 식당 · 숙소 · 관광 + 택시</p>
+
+<div class="legend">
+  <i>▭ 실선 = 손님이 하는 것</i>
+  <i>▭ 회색 = 시스템이 하는 것</i>
+  <i>▭ 점선 = 창고(Supabase)</i>
+  <i class="back">↩ 빨강 = 되돌아가는 길</i>
+</div>
+
+<h2>1. 큰 줄기 — 한 방향으로 흐르는 길</h2>
+
+<div class="row">
+  <div class="box"><b>도메인 고름</b><span>식당·숙소·관광</span></div>
+  <span class="arrow">➔</span>
+  <div class="box"><b>조건 입력</b><span>지역·종류·가격·옵션</span></div>
+  <span class="arrow">➔</span>
+  <div class="box fill"><b>장소 검색</b><span>places 조회</span></div>
+  <span class="arrow">➔</span>
+  <div class="box"><b>하나 고름</b></div>
+  <span class="arrow">➔</span>
+  <div class="box fill"><b>예약</b><span>예약번호 발급</span></div>
+</div>
+
+<div class="row">
+  <div class="box key"><b>★ 이월</b><span>장소 이름 ➔ 택시 도착지</span></div>
+  <span class="arrow">➔</span>
+  <div class="box"><b>출발지·시간 입력</b></div>
+  <span class="arrow">➔</span>
+  <div class="box fill"><b>배차</b><span>기사 매칭</span></div>
+  <span class="arrow">➔</span>
+  <div class="box fill"><b>확정</b><span>기사 전화번호</span></div>
+</div>
+
+<div class="row">
+  <div class="box dash"><b>Supabase</b><span>places · drivers · rides</span></div>
+  <span class="note">— 검색·예약·배차·수정이 전부 이 창고를 지납니다</span>
+</div>
+
+<h2>2. 되돌아가는 길 — 시나리오 9개가 전부 여기다</h2>
+<p class="note" style="margin-bottom:12px">
+  대부분의 Flow Diagram 은 왼쪽에서 오른쪽으로만 흐릅니다.
+  아래 6개 화살표를 그려 넣어야 9개 시나리오가 그림 위에서 설명됩니다.
+</p>
+
+<table>
+  <tr><th>↩ A · 조건 다시</th>
+      <td><b>[장소 검색] ➔ 되돌아 ➔ [조건 입력]</b><br>
+          조건을 <u>거는</u> 것뿐 아니라 <u>푸는</u> 길도 있어야 함 — 시나리오 1, 3</td></tr>
+  <tr><th>↩ B · 장소 다시</th>
+      <td><b>[예약] ➔ 되돌아 ➔ [장소 검색]</b><br>
+          이미 예약한 뒤에 다른 곳으로 — 시나리오 2</td></tr>
+  <tr><th class="key">↩ C · 이월 갱신 ★</th>
+      <td><b>[장소 다시 예약] ➔ [택시 도착지] 를 덮어씀</b><br>
+          <b>이 화살표가 이 과제의 핵심</b> — 시나리오 7.
+          장소를 바꾸면 택시 도착지가 따라가는가? 정답이 없음</td></tr>
+  <tr><th>↩ D · 슬롯 수정</th>
+      <td><b>[확정] ➔ 되돌아 ➔ [출발지·시간·차종]</b><br>
+          배차가 끝난 뒤에도 고칠 수 있어야 함 — 시나리오 4, 5, 6</td></tr>
+  <tr><th>↩ E · 차종 ➔ 재배차</th>
+      <td><b>[차종 변경] ➔ [기사 매칭] 다시</b><br>
+          차종을 바꾸면 기사가 자동으로 다시 잡힘 — 시나리오 5</td></tr>
+  <tr><th>↩ F · 전체 초기화</th>
+      <td><b>[어디서든] ➔ [도메인 고름] · 옛 호출은 <u>취소</u> 로</b><br>
+          시나리오 9</td></tr>
+</table>
+
+<h2>3. 두 방식이 갈리는 곳 — 같은 창고, 다른 입구</h2>
+
+<div class="row">
+  <div class="box"><b>웹 · 폼</b><span>칸을 채운다</span></div>
+  <span class="arrow">↘</span>
+  <div class="box dash"><b>Supabase</b></div>
+  <span class="arrow">↙</span>
+  <div class="box"><b>봇 · 대화</b><span>말로 한다</span></div>
+</div>
+<p class="note">
+  <b>웹은 수정 입구가 둘</b> — ① 확정 카드에서 줄마다 [수정] (장바구니식)
+  ② 위쪽 폼을 고치고 [변경 저장] (일괄식)<br>
+  <b>봇은 입구가 하나</b> — 말 한 문장. 대신 여러 칸을 한 번에 바꿀 수 있고
+  <b>&ldquo;거기로 가는 택시&rdquo;</b> 처럼 이름을 안 말해도 알아들음
+</p>
+
+<h2>4. 손으로 그릴 때 순서</h2>
+<ol>
+  <li>2번 섹션의 <b>큰 줄기</b>를 가로로 한 줄 그린다 (상자 9개)</li>
+  <li>아래에 <b>Supabase 원통</b> 하나, 점선으로 연결</li>
+  <li>★ <b>이월</b> 상자를 눈에 띄게 (다른 색 / 두꺼운 테두리)</li>
+  <li>위쪽에 <b>빨간 되돌아가는 화살표 6개</b> (A~F). 이게 진짜 볼거리</li>
+  <li>왼쪽에 <b>웹 · 봇</b> 두 입구를 그리고 창고로 모은다</li>
+  <li>C 화살표 옆에 한 줄 적는다 — <b>&ldquo;장소를 바꾸면 도착지도 따라간다&rdquo;</b></li>
+</ol>
