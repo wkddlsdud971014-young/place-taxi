@@ -6,6 +6,7 @@ import {
   cancelRide, recentRides, getDriver,
 } from "@/lib/api";
 import type { Restaurant, Ride, Driver } from "@/lib/supabase";
+import { Steps } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -165,15 +166,20 @@ export default function Home() {
     set바쁨(false);
   };
 
+  const 지금단계: 1 | 2 | 3 = ride ? 3 : 식당 ? 2 : 1;
+
   return (
     <div className="space-y-6">
+      <Steps 지금={지금단계} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ---------------- 1번 블록 ---------------- */}
-        <Card>
+        <Card className="tab-place">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline">1</Badge>
-              <CardTitle className="text-base">식당 찾기</CardTitle>
+              <span className="text-lg">🍽️</span>
+              <CardTitle className="text-base">BLOCK 1 · 식당 찾기</CardTitle>
+              {식당 && <Badge className="ml-auto bg-green-600 hover:bg-green-600">예약 완료</Badge>}
             </div>
             <CardDescription>조건을 고르고 검색한 뒤 하나를 예약합니다.</CardDescription>
           </CardHeader>
@@ -229,17 +235,26 @@ export default function Home() {
         </Card>
 
         {/* ---------------- 2번 블록 ---------------- */}
-        <Card>
+        <Card className="tab-taxi">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Badge variant="outline">2</Badge>
-              <CardTitle className="text-base">택시 부르기</CardTitle>
+              <span className="text-lg">🚕</span>
+              <CardTitle className="text-base">BLOCK 2 · 택시 배차</CardTitle>
+              {ride && <Badge className="ml-auto bg-green-600 hover:bg-green-600">{ride.status}</Badge>}
             </div>
             <CardDescription>
               식당을 예약하면 <span className="font-medium text-foreground">도착지가 저절로 채워집니다</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {식당 && dropoff === 식당.name && (
+              <div className="carry-box rounded-lg px-3 py-2.5 text-xs">
+                <span className="font-semibold">🔵 도착지 자동 이월됨</span>
+                <br />
+                앞서 예약한 <span className="font-semibold">{식당.name}</span> 이(가) 도착지로 자동
+                지정되었습니다. 아래 칸에서 직접 고칠 수도 있습니다.
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">출발지</Label>
               <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="강남역" />
@@ -254,6 +269,7 @@ export default function Home() {
                 )}
               </Label>
               <Input value={dropoff} onChange={(e) => setDropoff(e.target.value)}
+                     className={식당 && dropoff === 식당.name ? "carry-input" : ""}
                      placeholder="식당을 예약하면 채워집니다" />
             </div>
             <div className="space-y-1.5">
@@ -288,14 +304,17 @@ export default function Home() {
 
       {/* ---------------- 결과 ---------------- */}
       {(ride || 안내) && (
-        <Card>
+        <Card className={ride ? "tab-done done-box" : ""}>
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {ride && <span className="text-lg">✅</span>}
               <CardTitle className="text-base">
-                {ride ? `호출번호 ${ride.id}` : "안내"}
+                {ride ? `배차 확정 · TX-${String(ride.id).padStart(5, "0")}` : "안내"}
               </CardTitle>
-              {ride && <Badge>{ride.status}</Badge>}
-              {ride?.carried && <Badge variant="secondary">도착지 이월됨</Badge>}
+              {ride && <Badge className="bg-green-600 hover:bg-green-600">{ride.status}</Badge>}
+              {ride?.carried && (
+                <Badge className="bg-blue-600 hover:bg-blue-600">도착지 이월됨</Badge>
+              )}
               {ride && <Badge variant="outline">고친 횟수 {ride.change_count}</Badge>}
             </div>
             {안내 && <CardDescription>{안내}</CardDescription>}
@@ -371,7 +390,7 @@ export default function Home() {
       {/* ---------------- 최근 호출 ---------------- */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">최근 호출</CardTitle>
+          <CardTitle className="text-base">📊 최근 호출</CardTitle>
           <CardDescription>웹과 봇이 같은 창고를 씁니다. 둘이 섞여서 쌓입니다.</CardDescription>
         </CardHeader>
         <CardContent>

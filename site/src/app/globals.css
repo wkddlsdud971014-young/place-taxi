@@ -128,3 +128,55 @@
     @apply font-sans;
   }
 }
+/* ================================================================
+   브랜드 색 - 택시 옐로우 + 딥 네이비
+   회색만 쓰니 화면이 심심해 보였습니다. 색을 넣습니다.
+   ================================================================ */
+:root {
+  --taxi:        #f5b301;   /* 택시 노랑 */
+  --taxi-deep:   #d99700;
+  --navy:        #0f172a;   /* 딥 네이비 */
+  --navy-2:      #1e293b;
+  --ok:          #16a34a;   /* 완료 초록 */
+  --carry:       #2563eb;   /* 이월 파랑 */
+
+  --primary: var(--navy);
+  --ring: var(--taxi);
+}
+
+.hero {
+  background:
+    radial-gradient(1200px 400px at 12% -20%, rgba(245,179,1,.28), transparent 60%),
+    linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 55%, #263449 100%);
+  color: #fff;
+}
+.hero-taxi { color: var(--taxi); }
+
+/* 단계 표시 */
+.step        { border: 1px solid var(--border); background: #fff; }
+.step-on     { border-color: var(--taxi); background: #fffbeb; }
+.step-done   { border-color: var(--ok);   background: #f0fdf4; }
+.step-num    { width: 1.5rem; height: 1.5rem; border-radius: 999px;
+               display: grid; place-items: center;
+               font-size: .75rem; font-weight: 700;
+               background: var(--muted); color: var(--muted-foreground); }
+.step-on   .step-num { background: var(--taxi); color: var(--navy); }
+.step-done .step-num { background: var(--ok);   color: #fff; }
+
+/* 카드 위 색 띠 */
+.tab-place { box-shadow: inset 0 3px 0 0 var(--taxi); }
+.tab-taxi  { box-shadow: inset 0 3px 0 0 var(--carry); }
+.tab-done  { box-shadow: inset 0 3px 0 0 var(--ok); }
+
+/* 이월 강조 */
+.carry-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+.carry-input { border-color: var(--carry) !important; background: #f8fbff; }
+
+/* 완료 카드 */
+.done-box { background: linear-gradient(135deg, #f0fdf4, #ffffff);
+            border: 1px solid #bbf7d0; }
+
+.dark .step { background: var(--card); }
+.dark .carry-box { background: #0b1b3a; border-color: #1e40af; color: #bfdbfe; }
+.dark .done-box  { background: linear-gradient(135deg, #052e16, var(--card));
+                   border-color: #166534; }

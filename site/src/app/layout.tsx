@@ -12,7 +12,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-muted/30 antialiased">
+      <body className="min-h-screen bg-muted/40 antialiased">
         <Nav />
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
       </body>
