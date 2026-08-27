@@ -13,10 +13,12 @@ const 검증 = ["두 블록 연계 (장소 ➔ 택시)", "도착지 자동 이�
 
 export function Nav() {
   const path = usePathname();
+  // 봇 탭에서는 머리를 접습니다. 안 접으면 채팅창이 화면 밖으로 밀립니다.
+  const 접기 = path === "/bot";
   return (
     <header className="hero">
-      <div className="mx-auto max-w-6xl px-6 pt-10 pb-6">
-        <div className="flex flex-wrap items-start justify-between gap-6">
+      <div className={cn("mx-auto max-w-6xl px-6", 접기 ? "pt-5 pb-4" : "pt-10 pb-6")}>
+        <div className={cn("flex flex-wrap items-start justify-between gap-6", 접기 && "hidden")}>
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-widest">
               <span className="text-base leading-none">🚕</span>
@@ -47,7 +49,7 @@ export function Nav() {
           </div>
         </div>
 
-        <nav className="mt-8 flex gap-2">
+        <nav className={cn("flex gap-2", 접기 ? "mt-0" : "mt-8")}>
           {탭.map((t) => (
             <Link
               key={t.href}

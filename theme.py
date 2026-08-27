@@ -98,3 +98,21 @@ table thead th { background: #fafafa !important; font-weight: 500 !important;
 .dark table thead th { background: #18181b !important; }
 .dark .result table td:first-child { color: #a1a1aa; }
 """
+
+# iframe 안에 들어갈 때 위아래 여백을 줄입니다.
+CSS += """
+.gradio-container { padding: 8px 12px !important; max-width: 100% !important; }
+.gradio-container > .main { gap: .5rem !important; }
+footer { display: none !important; }
+
+/* iframe 안에서 아래쪽에 큰 빈 공간이 남았습니다(260827 실측).
+   내용만큼만 차지하게 하고 배경을 흰색으로 고정합니다. */
+html, body, gradio-app, .gradio-container {
+    height: auto !important; min-height: 0 !important;
+    background: #ffffff !important;
+}
+.gradio-container > .main { min-height: 0 !important; }
+.message-wrap { font-size: .8125rem !important; }
+.result table { font-size: .75rem !important; }
+.result table td, .result table th { padding: 2px 6px !important; }
+"""

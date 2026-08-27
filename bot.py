@@ -331,15 +331,18 @@ def 새로시작():
 
 
 with gr.Blocks(title="장소 + 택시 (봇)", theme=THEME, css=CSS) as demo:
-    gr.Markdown("# 장소 예약하고 택시 부르기\n<span class='muted'>말로 하세요. 한 번에 여러 개 말해도 됩니다.</span>")
+    # 이 화면은 웹 사이트 안에 끼워 넣습니다. 바깥에 이미 제목이 있으므로
+    # 여기서는 제목을 빼고 최대한 납작하게 만듭니다(260827 실측 - 스크롤 불편).
     상자 = gr.State(빈상자())
 
-    with gr.Row():
-        with gr.Column(scale=2):
-            화면 = gr.Chatbot(type="messages", height=460)
-            입력 = gr.Textbox(placeholder="예) 헬스장 있는 숙소 찾아주세요", label="", submit_btn=True)
-            새로btn = gr.Button("새로 시작")
-        with gr.Column(scale=1, elem_classes="card"):
+    with gr.Row(equal_height=False):
+        with gr.Column(scale=3):
+            화면 = gr.Chatbot(type="messages", height=330, show_label=False)
+            with gr.Row():
+                입력 = gr.Textbox(placeholder="예) 헬스장 있는 숙소 찾아주세요", label="",
+                                  submit_btn=True, scale=5, container=False)
+                새로btn = gr.Button("새로 시작", size="sm", scale=1)
+        with gr.Column(scale=2, elem_classes="card"):
             판 = gr.Markdown(현황(빈상자()), elem_classes="result")
 
     # api_name=False 를 빼면 gradio 가 State 안의 사전으로 API 문서를 만들려다 터집니다.
