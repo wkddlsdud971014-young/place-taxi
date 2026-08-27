@@ -15,6 +15,11 @@ export default function RootLayout({
       <body className="min-h-screen bg-muted/40 antialiased">
         <Nav />
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+        <footer className="mx-auto max-w-6xl px-6 pb-10 text-xs text-muted-foreground">
+          <a href="/admin" className="hover:underline">🔧 관리자</a>
+          <span className="mx-2">·</span>
+          <a href="/flow.html" className="hover:underline">🖍️ Flow 밑그림</a>
+        </footer>
       </body>
     </html>
   );

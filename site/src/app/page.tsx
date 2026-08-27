@@ -19,9 +19,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
 
 const 지역들 = ["상관없음", "서울 중앙", "서울 동쪽", "서울 서쪽", "서울 남쪽", "서울 북쪽"];
 const 가격들 = ["상관없음", "저렴", "보통", "비싼", "무료"];
@@ -68,7 +65,8 @@ export default function Home() {
   const [목록, set목록] = useState<Ride[]>([]);
   const [바쁨, set바쁨] = useState(false);
 
-  const 목록새로 = async () => set목록(await recentRides(10));
+  // 목록은 관리자 페이지(/admin)로 옮겼습니다.
+  const 목록새로 = async () => set목록(await recentRides(1));
   useEffect(() => { 목록새로(); }, []);
 
   const 보이기 = async (r: Ride | null) => {
@@ -459,45 +457,6 @@ export default function Home() {
         </Card>
       )}
 
-      {/* ---------------- 최근 호출 ---------------- */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">📊 최근 호출</CardTitle>
-          <CardDescription>웹과 봇이 같은 창고를 씁니다. 둘이 섞여서 쌓입니다.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {["번호", "어디서", "도메인", "장소", "출발지", "도착지", "이월", "시간", "차종", "상태", "고친횟수"]
-                    .map((h) => <TableHead key={h} className="text-xs">{h}</TableHead>)}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {목록.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs">{r.id}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.source === "bot" ? "default" : "secondary"}
-                             className="h-5 px-1.5 text-[10px]">{r.source}</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{r.place_domain ?? "-"}</TableCell>
-                    <TableCell className="text-xs">{r.place_name ?? "-"}</TableCell>
-                    <TableCell className="text-xs">{r.pickup}</TableCell>
-                    <TableCell className="text-xs">{r.dropoff}</TableCell>
-                    <TableCell className="text-xs">{r.carried ? "●" : ""}</TableCell>
-                    <TableCell className="text-xs">{r.request_time}</TableCell>
-                    <TableCell className="text-xs">{toUi(r.vehicle_type)}</TableCell>
-                    <TableCell className="text-xs">{r.status}</TableCell>
-                    <TableCell className="text-xs tabular-nums">{r.change_count}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
