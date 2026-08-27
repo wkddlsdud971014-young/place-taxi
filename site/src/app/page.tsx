@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import {
-  searchRestaurants, makeBookingCode, createRide, updateRide,
+  searchPlaces, makeBookingCode, createRide, updateRide,
   cancelRide, recentRides, getDriver,
 } from "@/lib/api";
-import type { Restaurant, Ride, Driver } from "@/lib/supabase";
+import type { Place, Ride, Driver } from "@/lib/supabase";
 import { Steps } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,22 +24,35 @@ import {
 } from "@/components/ui/table";
 
 const 지역들 = ["상관없음", "서울 중앙", "서울 동쪽", "서울 서쪽", "서울 남쪽", "서울 북쪽"];
-const 종류들 = ["상관없음", "한식", "중식", "일식", "양식", "아시아음식"];
-const 가격들 = ["상관없음", "저렴", "보통", "비싼"];
-const 차종들 = ["아무거나", "일반", "모범", "대형"];
+const 가격들 = ["상관없음", "저렴", "보통", "비싼", "무료"];
+const 차종들 = ["아무거나", "일반", "고급", "대형"];
+
+// 도메인마다 고를 수 있는 종류와 조건이 다릅니다
+const 도메인들 = [
+  { key: "식당", icon: "🍽️", 종류: ["상관없음", "한식", "중식", "일식", "양식", "치킨"],
+    조건: [{ key: "parking", label: "주차 가능" }] },
+  { key: "숙소", icon: "🏨", 종류: ["상관없음", "호텔", "모텔", "게스트하우스"],
+    조건: [{ key: "gym", label: "헬스장" }, { key: "breakfast", label: "조식" },
+           { key: "parking", label: "주차 가능" }] },
+  { key: "관광", icon: "🏛️", 종류: ["상관없음", "역사", "자연", "쇼핑"],
+    조건: [{ key: "parking", label: "주차 가능" }] },
+] as const;
 
 const toDb = (v: string) => (v === "상관없음" || v === "아무거나" ? "dontcare" : v);
 const toUi = (v: string) => (v === "dontcare" ? "아무거나" : v);
 
 export default function Home() {
   // 1번 블록
+  const [도메인, set도메인] = useState<"식당" | "숙소" | "관광">("식당");
   const [area, setArea] = useState("상관없음");
   const [cate, setCate] = useState("상관없음");
   const [price, setPrice] = useState("상관없음");
-  const [후보, set후보] = useState<Restaurant[]>([]);
+  const [옵션, set옵션] = useState<Record<string, boolean>>({});
+  const [후보, set후보] = useState<Place[]>([]);
   const [고른것, set고른것] = useState<string>("");
-  const [식당, set식당] = useState<Restaurant | null>(null);
+  const [식당, set식당] = useState<Place | null>(null);
   const [예약번호, set예약번호] = useState<string>("");
+  const 지금도메인 = 도메인들.find((d) => d.key === 도메인)!;
 
   // 2번 블록
   const [pickup, setPickup] = useState("");
@@ -89,11 +102,32 @@ export default function Home() {
   // ---------- 1번 블록 ----------
   const 검색 = async () => {
     set바쁨(true);
-    const rows = await searchRestaurants(toDb(area), toDb(cate), toDb(price));
+    const rows = await searchPlaces({
+      domain: 도메인, area: toDb(area), category: toDb(cate), price: toDb(price),
+      gym: 옵션.gym, parking: 옵션.parking, breakfast: 옵션.breakfast,
+    });
     set후보(rows);
     set고른것(rows[0]?.name ?? "");
-    set안내(rows.length ? `${rows.length}곳 찾았습니다.` : "조건에 맞는 식당이 없습니다.");
+    set안내(rows.length ? `${도메인} ${rows.length}곳 찾았습니다.`
+                        : `조건에 맞는 ${도메인}이(가) 없습니다. 조건을 풀어보세요.`);
     set바쁨(false);
+  };
+
+  // 도메인을 바꾸면 조건과 후보를 비웁니다 (시나리오 9)
+  const 도메인바꾸기 = (d: "식당" | "숙소" | "관광") => {
+    set도메인(d); setCate("상관없음"); setPrice("상관없음");
+    set옵션({}); set후보([]); set고른것("");
+  };
+
+  // 시나리오 9 - 처음부터 다시
+  const 처음부터 = async () => {
+    if (ride) await cancelRide(ride.id);
+    set도메인("식당"); setArea("상관없음"); setCate("상관없음"); setPrice("상관없음");
+    set옵션({}); set후보([]); set고른것(""); set식당(null); set예약번호("");
+    setPickup(""); setDropoff(""); setTime(""); setVtype("아무거나");
+    setRide(null); set기사(null); set수정중(null);
+    set안내("처음부터 다시 시작합니다.");
+    await 목록새로();
   };
 
   const 예약 = async () => {
@@ -105,7 +139,7 @@ export default function Home() {
     setDropoff(가게.name);           // ★ 이월 ★ 도착지가 저절로 채워집니다
     if (ride) {
       const r = await updateRide(ride.id, {
-        dropoff: 가게.name, place_name: 가게.name,
+        dropoff: 가게.name, place_domain: 도메인, place_name: 가게.name,
         place_booking: code, carried: true,
       });
       await 보이기(r);
@@ -122,6 +156,7 @@ export default function Home() {
     set바쁨(true);
     const r = await createRide({
       pickup, dropoff, requestTime: time, vehicleType: toDb(vtype),
+      placeDomain: 식당 ? 도메인 : null,
       placeName: 식당?.name ?? null, placeBooking: 예약번호 || null,
       carried: !!식당 && dropoff === 식당.name,
     });
@@ -177,15 +212,28 @@ export default function Home() {
         <Card className="tab-place">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🍽️</span>
-              <CardTitle className="text-base">BLOCK 1 · 식당 찾기</CardTitle>
+              <span className="text-lg">{지금도메인.icon}</span>
+              <CardTitle className="text-base">BLOCK 1 · 장소 접수</CardTitle>
               {식당 && <Badge className="ml-auto bg-green-600 hover:bg-green-600">예약 완료</Badge>}
             </div>
-            <CardDescription>조건을 고르고 검색한 뒤 하나를 예약합니다.</CardDescription>
+            <CardDescription>도메인을 고르고 조건을 좁혀 하나를 예약합니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 도메인 선택 - 시나리오 9(처음부터 다시, 식당으로) 가 여기입니다 */}
+            <div className="grid grid-cols-3 gap-2">
+              {도메인들.map((d) => (
+                <button key={d.key} type="button" onClick={() => 도메인바꾸기(d.key)}
+                  className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                    도메인 === d.key
+                      ? "border-amber-400 bg-amber-50 text-amber-900"
+                      : "hover:bg-muted"}`}>
+                  <span className="mr-1.5">{d.icon}</span>{d.key}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
-              {([["지역", area, setArea, 지역들], ["종류", cate, setCate, 종류들],
+              {([["지역", area, setArea, 지역들], ["종류", cate, setCate, 지금도메인.종류],
                  ["가격대", price, setPrice, 가격들]] as const).map(([label, val, set, opts]) => (
                 <div key={label} className="space-y-1.5">
                   <Label className="text-xs">{label}</Label>
@@ -199,8 +247,25 @@ export default function Home() {
               ))}
             </div>
 
+            {/* 켜면 그 조건이 있는 곳만, 끄면 '없어도 된다' 는 뜻 (시나리오 1) */}
+            <div className="flex flex-wrap gap-2">
+              {지금도메인.조건.map((c) => (
+                <button key={c.key} type="button"
+                  onClick={() => set옵션((o) => ({ ...o, [c.key]: !o[c.key] }))}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    옵션[c.key]
+                      ? "border-blue-400 bg-blue-50 text-blue-800"
+                      : "text-muted-foreground hover:bg-muted"}`}>
+                  {옵션[c.key] ? "✓ " : ""}{c.label}
+                </button>
+              ))}
+              <span className="self-center text-[11px] text-muted-foreground">
+                켜면 그 조건이 있는 곳만 · 끄면 상관없음
+              </span>
+            </div>
+
             <Button variant="outline" className="w-full" onClick={검색} disabled={바쁨}>
-              식당 검색
+              {도메인} 검색
             </Button>
 
             {후보.length > 0 && (
@@ -211,7 +276,7 @@ export default function Home() {
                     <RadioGroupItem value={r.name} />
                     <span className="font-medium">{r.name}</span>
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {r.area} · {r.category} · {r.price}
+                      {r.area} · {r.category}{r.price ? ` · ${r.price}` : ""}
                     </span>
                   </label>
                 ))}
@@ -226,7 +291,7 @@ export default function Home() {
               <div className="rounded-lg border bg-muted/40 p-3 text-sm">
                 <div className="font-medium">{식당.name}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {식당.area} · {식당.category} · {식당.price} · {식당.phone}
+                  {식당.area} · {식당.category}{식당.price ? ` · ${식당.price}` : ""} · {식당.phone}
                   <br />예약번호 <span className="font-mono">{예약번호}</span>
                 </div>
               </div>
@@ -298,6 +363,11 @@ export default function Home() {
               <Button variant="outline" size="sm" onClick={기사변경} disabled={바쁨}>다른 기사로</Button>
               <Button variant="outline" size="sm" onClick={취소} disabled={바쁨}>취소</Button>
             </div>
+            {/* 시나리오 9 - 다 정한 뒤 처음부터 다시 */}
+            <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground"
+                    onClick={처음부터} disabled={바쁨}>
+              ✨ 처음부터 다시
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -323,7 +393,9 @@ export default function Home() {
             <CardContent className="space-y-0">
               <div className="rounded-lg border">
                 {([
-                  { key: "place_name", label: "식당", val: ride.place_name ?? "-", 고칠수있나: false },
+                  { key: "place_name",
+                    label: ride.place_domain ?? "장소",
+                    val: ride.place_name ?? "-", 고칠수있나: false },
                   { key: "pickup", label: "출발지", val: ride.pickup ?? "", 고칠수있나: true },
                   { key: "dropoff", label: "도착지", val: ride.dropoff ?? "", 고칠수있나: true },
                   { key: "request_time", label: "출발시간", val: ride.request_time ?? "", 고칠수있나: true },
@@ -398,7 +470,7 @@ export default function Home() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {["번호", "어디서", "식당", "출발지", "도착지", "이월", "시간", "차종", "상태", "고친횟수"]
+                  {["번호", "어디서", "도메인", "장소", "출발지", "도착지", "이월", "시간", "차종", "상태", "고친횟수"]
                     .map((h) => <TableHead key={h} className="text-xs">{h}</TableHead>)}
                 </TableRow>
               </TableHeader>
@@ -410,6 +482,7 @@ export default function Home() {
                       <Badge variant={r.source === "bot" ? "default" : "secondary"}
                              className="h-5 px-1.5 text-[10px]">{r.source}</Badge>
                     </TableCell>
+                    <TableCell className="text-xs">{r.place_domain ?? "-"}</TableCell>
                     <TableCell className="text-xs">{r.place_name ?? "-"}</TableCell>
                     <TableCell className="text-xs">{r.pickup}</TableCell>
                     <TableCell className="text-xs">{r.dropoff}</TableCell>

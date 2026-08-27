@@ -6,9 +6,10 @@ export const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export type Restaurant = {
-  id: number; name: string; area: string;
-  category: string; price: string; phone: string;
+export type Place = {
+  id: number; domain: string; name: string; area: string;
+  category: string; price: string | null; phone: string;
+  gym: boolean; parking: boolean; breakfast: boolean;
 };
 
 export type Driver = {
@@ -18,6 +19,7 @@ export type Driver = {
 
 export type Ride = {
   id: number;
+  place_domain: string | null;
   place_name: string | null;
   place_booking: string | null;
   carried: boolean;

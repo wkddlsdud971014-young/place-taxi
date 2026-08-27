@@ -30,13 +30,14 @@ print(f"열쇠 OK  길이 {len(key)}")
 
 sb = create_client(url, key)
 
-# 1. 기사 표를 읽어봅니다
+# 1. 장소 표와 기사 표를 읽어봅니다
 try:
+    places = sb.table("places").select("*").execute().data
     drivers = sb.table("drivers").select("*").execute().data
 except Exception as e:
     msg = str(e)
     if "does not exist" in msg or "PGRST205" in msg:
-        print("drivers 표가 없습니다  -> schema.sql 을 SQL Editor 에 붙여 넣고 Run 하세요")
+        print("기사 표가 없습니다  -> schema.sql 을 SQL Editor 에 붙여 넣고 Run 하세요")
     elif "Invalid API key" in msg or "JWT" in msg:
         print("열쇠가 맞지 않습니다  -> Settings > API 의 anon public 키를 다시 복사하세요")
     else:
@@ -44,8 +45,12 @@ except Exception as e:
     sys.exit(1)
 
 if len(drivers) == 0:
-    print("drivers 표가 비었습니다  -> schema.sql 의 insert 부분이 안 돌았습니다")
+    print("기사 표가 비었습니다  -> schema.sql 의 insert 부분이 안 돌았습니다")
     sys.exit(1)
+도메인별 = {}
+for p in places:
+    도메인별[p["domain"]] = 도메인별.get(p["domain"], 0) + 1
+print(f"장소 OK  {len(places)}곳  ({' · '.join(f'{k} {v}' for k, v in sorted(도메인별.items()))})")
 print(f"기사 OK  {len(drivers)}명  (예: {drivers[0]['name']} / {drivers[0]['vehicle_type']})")
 
 # 2. 호출 표에 진짜로 써봅니다  <- 자물쇠(RLS)가 안 풀렸으면 여기서 막힙니다

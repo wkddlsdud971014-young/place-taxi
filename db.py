@@ -25,19 +25,27 @@ def sb():
 
 
 # ================================================================
-#  1번 블록 - 식당
+#  1번 블록 - 장소 (식당 · 숙소 · 관광)
 # ================================================================
-def search_restaurants(area=None, category=None, price=None):
-    """조건에 맞는 식당을 찾습니다. 'dontcare' 나 빈 값은 안 따집니다."""
-    q = sb().table("restaurants").select("*")
+def search_places(domain, area=None, category=None, price=None, **옵션):
+    """조건에 맞는 장소를 찾습니다. 'dontcare' 나 빈 값은 안 따집니다.
+
+    옵션(gym / parking / breakfast) 은 True 일 때만 거릅니다.
+    끄면 '없어도 된다' 는 뜻이라 안 거릅니다.
+    시나리오 1 "헬스장 있는 숙소" -> "없어도 돼요" 가 이것입니다.
+    """
+    q = sb().table("places").select("*").eq("domain", domain)
     for 칸, 값 in (("area", area), ("category", category), ("price", price)):
         if 값 and 값 != "dontcare":
             q = q.eq(칸, 값)
+    for 칸 in ("gym", "parking", "breakfast"):
+        if 옵션.get(칸):
+            q = q.eq(칸, True)
     return q.order("id").execute().data
 
 
-def get_restaurant(name):
-    rows = sb().table("restaurants").select("*").eq("name", name).execute().data
+def get_place(name):
+    rows = sb().table("places").select("*").eq("name", name).execute().data
     return rows[0] if rows else None
 
 
@@ -75,7 +83,8 @@ def get_driver(driver_id):
 #  두 블록이 만나는 곳 - 호출
 # ================================================================
 def create_ride(pickup, dropoff, request_time, vehicle_type="dontcare",
-                source="web", place_name=None, place_booking=None, carried=False):
+                source="web", place_domain=None, place_name=None,
+                place_booking=None, carried=False):
     """새 호출을 접수하고 기사까지 배정합니다.
 
     carried = True 는 '도착지를 손님이 치지 않고 식당에서 넘어왔다' 는 뜻입니다.
@@ -83,6 +92,7 @@ def create_ride(pickup, dropoff, request_time, vehicle_type="dontcare",
     """
     driver = pick_driver(vehicle_type)
     return sb().table("rides").insert({
+        "place_domain": place_domain,
         "place_name": place_name,
         "place_booking": place_booking,
         "carried": carried,

@@ -1,16 +1,25 @@
 // db.py 와 똑같은 일을 하는 자바스크립트판입니다.
 // 웹(여기) 과 봇(파이썬) 이 같은 표를 씁니다.
-import { sb, Restaurant, Driver, Ride } from "./supabase";
+import { sb, Place, Driver, Ride } from "./supabase";
 
 const 아무거나 = (v?: string) => !v || v === "dontcare";
 
-export async function searchRestaurants(
-  area?: string, category?: string, price?: string
-): Promise<Restaurant[]> {
-  let q = sb.from("restaurants").select("*");
-  if (!아무거나(area)) q = q.eq("area", area!);
-  if (!아무거나(category)) q = q.eq("category", category!);
-  if (!아무거나(price)) q = q.eq("price", price!);
+export type 조건 = {
+  domain: string;
+  area?: string; category?: string; price?: string;
+  gym?: boolean; parking?: boolean; breakfast?: boolean;
+};
+
+export async function searchPlaces(c: 조건): Promise<Place[]> {
+  let q = sb.from("places").select("*").eq("domain", c.domain);
+  if (!아무거나(c.area)) q = q.eq("area", c.area!);
+  if (!아무거나(c.category)) q = q.eq("category", c.category!);
+  if (!아무거나(c.price)) q = q.eq("price", c.price!);
+  // 체크를 켰을 때만 거릅니다. 끄면 '없어도 된다' 는 뜻이라 안 거릅니다.
+  // 시나리오 1 "헬스장 있는 숙소" -> "없어도 돼요" 가 이 줄입니다.
+  if (c.gym) q = q.eq("gym", true);
+  if (c.parking) q = q.eq("parking", true);
+  if (c.breakfast) q = q.eq("breakfast", true);
   const { data } = await q.order("id");
   return data ?? [];
 }
@@ -38,10 +47,12 @@ export async function getDriver(id: number | null) {
 
 export async function createRide(v: {
   pickup: string; dropoff: string; requestTime: string; vehicleType: string;
+  placeDomain?: string | null;
   placeName?: string | null; placeBooking?: string | null; carried: boolean;
 }): Promise<Ride> {
   const driver = await pickDriver(v.vehicleType);
   const { data } = await sb.from("rides").insert({
+    place_domain: v.placeDomain ?? null,
     place_name: v.placeName ?? null,
     place_booking: v.placeBooking ?? null,
     carried: v.carried,
