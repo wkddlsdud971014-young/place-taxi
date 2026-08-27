@@ -11,8 +11,10 @@ import sys
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+import os
 import gradio as gr
 import db
+from theme import THEME, CSS
 
 AREAS = ["상관없음", "서울 중앙", "서울 동쪽", "서울 서쪽", "서울 남쪽", "서울 북쪽"]
 CATES = ["상관없음", "한식", "중식", "일식", "양식", "아시아음식"]
@@ -141,42 +143,42 @@ def 취소(ride_id):
 # ================================================================
 #  화면
 # ================================================================
-with gr.Blocks(title="식당 + 택시 (웹)") as demo:
-    gr.Markdown("# 🍽️ ➜ 🚕  식당 예약하고 택시 부르기 (웹)")
+with gr.Blocks(title="식당 + 택시 (웹)", theme=THEME, css=CSS) as demo:
+    gr.Markdown("# 식당 예약하고 택시 부르기\n<span class='muted'>칸을 채우고 버튼을 누르세요. 식당을 예약하면 도착지가 저절로 채워집니다.</span>")
     현재호출 = gr.State(None)
     고른식당 = gr.State(None)
     예약번호 = gr.State(None)
 
     with gr.Row():
         # ---------------- 1번 블록 ----------------
-        with gr.Column(scale=1):
-            gr.Markdown("## 1️⃣ 식당 찾기")
+        with gr.Column(scale=1, elem_classes="card"):
+            gr.Markdown("## 1 · 식당 찾기")
             area = gr.Dropdown(AREAS, value="상관없음", label="지역")
             cate = gr.Dropdown(CATES, value="상관없음", label="종류")
             price = gr.Dropdown(PRICES, value="상관없음", label="가격대")
             검색btn = gr.Button("식당 검색")
-            검색안내 = gr.Markdown("")
+            검색안내 = gr.Markdown("", elem_classes="muted")
             결과목록 = gr.Radio([], label="검색 결과")
             예약btn = gr.Button("이 식당 예약", variant="primary")
-            식당결과 = gr.Markdown("")
+            식당결과 = gr.Markdown("", elem_classes="result")
 
         # ---------------- 2번 블록 ----------------
-        with gr.Column(scale=1):
-            gr.Markdown("## 2️⃣ 택시 부르기")
+        with gr.Column(scale=1, elem_classes="card"):
+            gr.Markdown("## 2 · 택시 부르기")
             pickup = gr.Textbox(label="출발지", placeholder="강남역")
             dropoff = gr.Textbox(label="🔵 도착지  (식당을 예약하면 자동으로 채워집니다)")
             time = gr.Textbox(label="출발 시간", placeholder="19:00")
             # 기본값이 '아무거나' 입니다. 실제 데이터의 94% 가 이것입니다.
             vtype = gr.Radio(TYPES, value="아무거나", label="차종")
             부르기btn = gr.Button("택시 부르기", variant="primary")
-            gr.Markdown("---\n**접수한 뒤 고칠 때**  위 칸을 고치고 아래를 누르세요.")
+            gr.Markdown("<span class='muted'>접수한 뒤 고칠 때 — 위 칸을 고치고 아래를 누르세요.</span>")
             with gr.Row():
                 변경btn = gr.Button("변경 저장")
                 기사btn = gr.Button("다른 기사로")
                 취소btn = gr.Button("취소")
-            결과 = gr.Markdown("아직 부른 택시가 없습니다.")
+            결과 = gr.Markdown("아직 부른 택시가 없습니다.", elem_classes="result")
 
-    gr.Markdown("### 최근 호출 (웹 · 봇 같이 보임)")
+    gr.Markdown("### 최근 호출  <span class='muted'>웹과 봇이 같은 창고를 씁니다</span>")
     표 = gr.Dataframe(
         headers=["번호", "어디서", "식당", "출발지", "도착지", "이월", "시간", "차종", "상태", "고친횟수"],
         value=목록, interactive=False)
@@ -191,4 +193,7 @@ with gr.Blocks(title="식당 + 택시 (웹)") as demo:
     취소btn.click(취소, [현재호출], [현재호출, 결과, 표])
 
 if __name__ == "__main__":
-    demo.launch(server_port=7870)
+    # SHARE=1 을 붙여 켜면 밖에서 들어올 수 있는 공개 주소가 하나 더 나옵니다.
+    #   ./.venv/bin/python web.py          -> 내 컴퓨터에서만
+    #   SHARE=1 ./.venv/bin/python web.py  -> 공개 주소도 같이
+    demo.launch(share=os.getenv("SHARE") == "1", server_port=7870)
