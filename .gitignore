@@ -11,3 +11,8 @@ data/
 
 # 맥이 자동으로 만드는 것
 .DS_Store
+
+# Next.js
+site/node_modules/
+site/.next/
+site/.vercel/
