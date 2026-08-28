@@ -172,6 +172,64 @@ def 한줄(코드):
     return 줄 + "\n\n자세한 영수증은 오른쪽 화면에 있습니다."
 
 
+# ----------------------------------------------------------
+#  되묻기
+#  짐작해서 채우지 않고 물어봅니다. 턴은 늘지만 틀린 값이 조용히
+#  들어가는 일이 없어집니다. 무엇을 물었는지는 창고 pending 칸에 적습니다 -
+#  봇은 다음 턴에 아무것도 기억하지 못하기 때문입니다.
+# ----------------------------------------------------------
+긍정 = ("네", "넵", "예", "응", "웅", "맞", "그래", "그렇", "ㅇㅇ", "좋아", "ok", "yes")
+부정 = ("아니", "아뇨", "아냐", "싫", "no", "틀렸")
+오전말 = ("오전", "아침", "새벽")
+오후말 = ("오후", "저녁", "밤", "점심", "낮")
+
+
+def 시간애매(말, 값):
+    """'7시' 처럼 오전·오후가 안 붙은 시각이면 두 후보를 돌려줍니다."""
+    m = re.match(r"^(\d{1,2}):(\d{2})$", str(값 or ""))
+    if not m:
+        return None
+    시, 분 = int(m.group(1)), m.group(2)
+    if any(w in 말 for w in 오전말 + 오후말):
+        return None
+    # 손님이 13 이상이나 0 을 직접 말했으면 애매하지 않습니다("19시")
+    if any(int(n) >= 13 or int(n) == 0 for n in re.findall(r"\d{1,2}", 말)):
+        return None
+    시 = 시 - 12 if 시 >= 13 else 시
+    if not 1 <= 시 <= 12:
+        return None
+    앞 = 0 if 시 == 12 else 시
+    뒤 = 12 if 시 == 12 else 시 + 12
+    return [f"{앞:02d}:{분}", f"{뒤:02d}:{분}"]
+
+
+def 대기풀기(말, 대기):
+    """되물은 것에 대한 답을 규칙으로 풉니다. 못 풀면 None (모델을 부릅니다)."""
+    납, 값들 = _납작(말), 대기["vals"]
+    for v in 값들:                              # 값을 그대로 말한 경우
+        if _납작(v) in 납:
+            return v
+    if 대기["k"] == "request_time" and len(값들) == 2:
+        if any(w in 말 for w in 오전말):
+            return 값들[0]
+        if any(w in 말 for w in 오후말):
+            return 값들[1]
+        return None
+    if any(w in 말 for w in 긍정):
+        return 값들[0]
+    if any(w in 말 for w in 부정):
+        return "_아니오"
+    return None
+
+
+def 되물음글(대기):
+    k, 값들 = 대기["k"], 대기["vals"]
+    if k == "request_time" and len(값들) == 2:
+        앞, 뒤 = 값들
+        return f"**오전 {앞}** 인가요, **오후 {뒤}** 인가요?"
+    return f"**{칸이름[k]} {값들[0]}** 으로 봐도 될까요? (네 / 아니오)"
+
+
 def 후보안내(종류):
     """창고에 없는 곳을 말했을 때, 있는 곳을 몇 개 보여줍니다."""
     후보 = [p["name"] for p in 모든장소() if not 종류 or p["domain"] == 종류][:6]
@@ -194,97 +252,11 @@ def 영수증글(r, d, 메모):
 # ================================================================
 #  대화 한 번
 # ================================================================
-def 대화(말, 코드, 기록):
-    말 = (말 or "").strip()
-    코드 = (코드 or "1").strip() or "1"
-    if not 말:
-        return 기록, 한줄(코드), ""
-
-    옛 = db.get_session(코드)                      # ① 창고에서 꺼낸다
-    got = 뽑기(말, 옛)                             # ② Gemini 1콜
-
-    if "_오류" in got:
-        기록 = 기록 + [{"role": "user", "content": 말},
-                      {"role": "assistant", "content": f"모델 오류: {got['_오류']}"}]
-        return 기록, 한줄(코드), ""
-
-    if got.get("초기화"):
-        db.clear_session(코드)
-        답 = "메모판을 비웠습니다. 처음부터 다시 시작합니다."
-        return (기록 + [{"role": "user", "content": 말},
-                       {"role": "assistant", "content": 답}], 한줄(코드), "")
-
-    바뀐 = {}
-    for k in db.슬롯칸:
-        v = got.get(k)
-        if v and str(v).strip():
-            바뀐[k] = str(v).strip()
-
-    # 창고에 없는 장소는 적지 않습니다.
-    # 안 막으면 '성수동 근처 파스타집' 처럼 없는 곳으로 접수가 됩니다(260828 실측).
-    없던곳 = None
-    if 바뀐.get("place_name"):
-        p = 장소찾기(바뀐["place_name"])
-        if p:
-            바뀐["place_name"] = p["name"]
-            바뀐.setdefault("place_kind", p["domain"])
-        else:
-            없던곳 = 바뀐.pop("place_name")
-            # 같은 이름이 도착지·출발지로도 새어 들어옵니다.
-            # "성수동 파스타집으로 바꿔줘" 는 장소이면서 도착지이기도 해서,
-            # 장소만 막으면 도착지로 들어가 버립니다(260828 실측).
-            for 칸 in ("dropoff", "pickup"):
-                v = 바뀐.get(칸)
-                if v and (v == 없던곳 or v in 없던곳 or 없던곳 in v):
-                    바뀐.pop(칸)
-
-    # 이미 적혀 있는 값과 같으면 뺍니다.
-    # 안 빼면 "적었습니다 - 장소-종류" 가 헛되이 뜨고 호출도 괜히 고쳐집니다.
-    바뀐 = {k: v for k, v in 바뀐.items() if v != 옛.get(k)}
-
-    # 이월 - "거기로" 라고만 하면 도착지를 장소 이름으로 채웁니다
-    이름 = 바뀐.get("place_name") or 옛.get("place_name")
-    if 이름 and not 바뀐.get("dropoff") and any(w in 말 for w in 지시어):
-        바뀐["dropoff"] = 이름
-
-    # 장소를 바꿨는데 도착지가 그 장소에서 이월된 것이었으면 도착지도 따라갑니다.
-    # 어제 시나리오 7번(경복궁 -> 창덕궁)과 같은 동작입니다.
-    if 바뀐.get("place_name") and 옛.get("carried") and 옛.get("dropoff") == 옛.get("place_name"):
-        바뀐["dropoff"] = 바뀐["place_name"]
-
-    if 이름 and 바뀐.get("dropoff") == 이름:
-        바뀐["carried"] = True
-
-    답 = []
-    # '식당' 처럼 종류를 말한 것을 가게 이름으로 보고 혼내면 안 됩니다(260828 실측).
-    if 없던곳 in ("식당", "숙소", "관광"):
-        없던곳 = None
-    if 없던곳:
-        종류 = 바뀐.get("place_kind") or 옛.get("place_kind")
-        답.append(f"'{없던곳}' 은 저희가 모르는 곳입니다. " + 후보안내(종류))
-
-    바뀐["turns"] = (옛.get("turns") or 0) + 1
-    메모 = db.save_session(코드, 바뀐)              # ③ 창고에 적는다
-    # ④ 봇의 뇌는 여기서 끝납니다. 다음 턴에 아무것도 안 들고 갑니다.
-
-    # 손님이 친 글자가 값 안에 그대로 있으면 '들은 것',
-    # 없으면 봇이 미루어 짐작한 것입니다. 둘을 갈라서 말해 줍니다.
-    # "배고프네요 -> 식당", "7시 -> 19:00" 처럼 짐작해 놓고 값을 안 보여주면
-    # 손님은 무엇이 적혔는지 모른 채 넘어갑니다(260828 실측).
+def 뒷정리(코드, 옛, 메모, 바뀐, 답):
+    """적은 뒤에 할 일 - 이미 나간 호출 고치기 · 다음 칸 묻기 · 영수증."""
     적은칸 = [k for k in db.슬롯칸 if k in 바뀐]
-    말납 = _납작(말)
-    들은것 = [k for k in 적은칸 if _납작(바뀐[k]) in 말납]
-    짐작 = [k for k in 적은칸 if k not in 들은것]
-    if 들은것:
-        답.append("적었습니다 — " +
-                  " · ".join(f"{칸이름[k]} **{바뀐[k]}**" for k in 들은것))
-    if 짐작:
-        답.append("이렇게 봤습니다 — " +
-                  " · ".join(f"{칸이름[k]} **{바뀐[k]}**" for k in 짐작) +
-                  "\n아니면 그냥 다시 말씀해 주세요. 고쳐 적습니다.")
 
     # 영수증이 이미 나왔으면 호출도 같이 고칩니다.
-    # 안 고치면 메모판과 영수증이 서로 다른 값을 갖게 됩니다(260828 실측).
     if 옛.get("ride_id") and 적은칸:
         변경 = {k: 바뀐[k] for k in ("pickup", "dropoff", "request_time") if k in 바뀐}
         if "place_name" in 바뀐:
@@ -299,7 +271,6 @@ def 대화(말, 코드, 기록):
     if 빈칸:
         답.append(되묻기[빈칸[0]])
     elif not 메모.get("ride_id"):
-        # 마지막 칸이 찼습니다. 영수증이 뿅 나옵니다.
         r = db.create_ride(
             pickup=메모["pickup"], dropoff=메모["dropoff"],
             request_time=메모["request_time"], source="bot2",
@@ -308,10 +279,139 @@ def 대화(말, 코드, 기록):
         메모 = db.save_session(코드, {"ride_id": r["id"]})
         d = db.get_driver(r["driver_id"]) if r.get("driver_id") else None
         답.append(영수증글(r, d, 메모))
+    return 답
 
-    기록 = 기록 + [{"role": "user", "content": 말},
-                  {"role": "assistant", "content": "\n\n".join(답)}]
-    return 기록, 한줄(코드), ""
+
+def 말붙이기(기록, 말, 답):
+    return 기록 + [{"role": "user", "content": 말},
+                   {"role": "assistant", "content": "\n\n".join(답)}]
+
+
+def 대화(말, 코드, 기록):
+    말 = (말 or "").strip()
+    코드 = (코드 or "1").strip() or "1"
+    if not 말:
+        return 기록, 한줄(코드), ""
+
+    옛 = db.get_session(코드)                      # ① 창고에서 꺼낸다
+
+    # ----- 되물은 것이 있으면 그 답부터 봅니다 -----
+    # 여기서 풀리면 모델을 아예 안 부릅니다. 되묻기로 턴은 늘어도
+    # 그 턴은 0콜이라 값은 오히려 덜 듭니다.
+    대기 = None
+    if 옛.get("pending"):
+        try:
+            대기 = json.loads(옛["pending"])
+        except Exception:
+            대기 = None
+
+    if 대기:
+        고른것 = 대기풀기(말, 대기)
+        if 고른것 == "_아니오":
+            db.save_session(코드, {"pending": None})
+            답 = ["알겠습니다. 그럼 다시 말씀해 주세요."]
+            빈칸 = [k for k in db.슬롯칸 if not 옛.get(k)]
+            if 빈칸:
+                답.append(되묻기[빈칸[0]])
+            return 말붙이기(기록, 말, 답), 한줄(코드), ""
+        if 고른것 is not None:
+            바뀐 = {대기["k"]: 고른것, "pending": None,
+                    "turns": (옛.get("turns") or 0) + 1}
+            메모 = db.save_session(코드, 바뀐)
+            답 = [f"적었습니다 — {칸이름[대기['k']]} **{고른것}**"]
+            답 = 뒷정리(코드, 옛, 메모, 바뀐, 답)
+            return 말붙이기(기록, 말, 답), 한줄(코드), ""
+        # 못 풀었습니다. 되물은 것은 접고 보통 흐름으로 갑니다.
+        db.save_session(코드, {"pending": None})
+        옛 = db.get_session(코드)
+
+    got = 뽑기(말, 옛)                             # ② Gemini 1콜
+
+    if "_오류" in got:
+        return (말붙이기(기록, 말, [f"모델 오류: {got['_오류']}"]),
+                한줄(코드), "")
+
+    if got.get("초기화"):
+        db.clear_session(코드)
+        return (말붙이기(기록, 말, ["메모판을 비웠습니다. 처음부터 다시 시작합니다."]),
+                한줄(코드), "")
+
+    바뀐 = {}
+    for k in db.슬롯칸:
+        v = got.get(k)
+        if v and str(v).strip():
+            바뀐[k] = str(v).strip()
+
+    # 창고에 없는 장소는 적지 않습니다.
+    없던곳 = None
+    if 바뀐.get("place_name"):
+        p = 장소찾기(바뀐["place_name"])
+        if p:
+            바뀐["place_name"] = p["name"]
+            바뀐.setdefault("place_kind", p["domain"])
+        else:
+            없던곳 = 바뀐.pop("place_name")
+            # 같은 이름이 도착지·출발지로도 새어 들어옵니다(260828 실측).
+            for 칸 in ("dropoff", "pickup"):
+                v = 바뀐.get(칸)
+                if v and (v == 없던곳 or v in 없던곳 or 없던곳 in v):
+                    바뀐.pop(칸)
+
+    # 이미 적혀 있는 값과 같으면 뺍니다.
+    바뀐 = {k: v for k, v in 바뀐.items() if v != 옛.get(k)}
+
+    # 이월 - "거기로" 라고만 하면 도착지를 장소 이름으로 채웁니다
+    이름 = 바뀐.get("place_name") or 옛.get("place_name")
+    if 이름 and not 바뀐.get("dropoff") and any(w in 말 for w in 지시어):
+        바뀐["dropoff"] = 이름
+    if 바뀐.get("place_name") and 옛.get("carried") and 옛.get("dropoff") == 옛.get("place_name"):
+        바뀐["dropoff"] = 바뀐["place_name"]
+    if 이름 and 바뀐.get("dropoff") == 이름:
+        바뀐["carried"] = True
+
+    답 = []
+    if 없던곳 in ("식당", "숙소", "관광"):
+        없던곳 = None
+    if 없던곳:
+        종류 = 바뀐.get("place_kind") or 옛.get("place_kind")
+        답.append(f"'{없던곳}' 은 저희가 모르는 곳입니다. " + 후보안내(종류))
+
+    # ----- 짐작한 칸은 적지 않고 되묻습니다 -----
+    # 손님이 친 글자가 값 안에 그대로 있으면 들은 것, 없으면 짐작입니다.
+    # 전에는 짐작한 값을 그냥 적었습니다. "배고프네요" 가 식당이 되고
+    # "7시" 가 19:00 이 됐는데 손님은 모른 채 넘어갔습니다(260828 실측).
+    말납 = _납작(말)
+    물을것 = None
+    for k in list(바뀐.keys()):
+        if k not in db.슬롯칸:
+            continue
+        후보 = 시간애매(말, 바뀐[k]) if k == "request_time" else None
+        if 후보:
+            물을것 = {"k": k, "vals": 후보}
+            바뀐.pop(k)
+            break
+        if _납작(바뀐[k]) not in 말납:
+            물을것 = {"k": k, "vals": [바뀐[k]]}
+            바뀐.pop(k)
+            break
+
+    적은칸 = [k for k in db.슬롯칸 if k in 바뀐]
+    if 적은칸:
+        답.append("적었습니다 — " +
+                  " · ".join(f"{칸이름[k]} **{바뀐[k]}**" for k in 적은칸))
+
+    바뀐["turns"] = (옛.get("turns") or 0) + 1
+    if 물을것:
+        바뀐["pending"] = json.dumps(물을것, ensure_ascii=False)
+    메모 = db.save_session(코드, 바뀐)              # ③ 창고에 적는다
+    # ④ 봇의 뇌는 여기서 끝납니다.
+
+    if 물을것:
+        답.append(되물음글(물을것))
+        return 말붙이기(기록, 말, 답), 한줄(코드), ""
+
+    답 = 뒷정리(코드, 옛, 메모, 바뀐, 답)
+    return 말붙이기(기록, 말, 답), 한줄(코드), ""
 
 
 def 지우기(코드):

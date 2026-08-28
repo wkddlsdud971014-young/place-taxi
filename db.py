@@ -156,7 +156,7 @@ def recent_rides(limit=10):
 from datetime import datetime, timezone
 
 슬롯칸 = ["place_kind", "place_name", "pickup", "dropoff", "request_time"]
-_저장가능 = 슬롯칸 + ["carried", "ride_id", "turns"]
+_저장가능 = 슬롯칸 + ["carried", "ride_id", "turns", "pending"]
 
 
 def _지금():
@@ -190,7 +190,8 @@ def save_session(code, 값들):
 def clear_session(code):
     """내 메모만 지웁니다. 남의 입장 코드는 안 건드립니다."""
     빈칸 = {k: None for k in 슬롯칸}
-    빈칸.update({"carried": False, "ride_id": None, "turns": 0, "updated_at": _지금()})
+    빈칸.update({"carried": False, "ride_id": None, "turns": 0,
+                 "pending": None, "updated_at": _지금()})
     get_session(code)
     return sb().table("sessions").update(빈칸).eq(
         "code", str(code).strip()).execute().data[0]

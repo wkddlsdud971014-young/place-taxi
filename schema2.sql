@@ -55,3 +55,15 @@ alter table settings enable row level security;
 
 create policy "실습 전체허용 sessions" on sessions for all using (true) with check (true);
 create policy "실습 전체허용 settings" on settings for all using (true) with check (true);
+
+-- ----------------------------------------------------------
+--  4. 되물은 것을 적어두는 칸  (260828 추가)
+--
+--  "7시" 를 오전으로 볼지 오후로 볼지 애매할 때 봇이 되묻습니다.
+--  그런데 봇은 다음 턴에 아무것도 기억하지 못하므로,
+--  무엇을 물었는지도 창고에 적어둬야 합니다.
+--  슬롯을 창고에 둔 것과 똑같은 이야기입니다.
+--
+--  이미 표를 만드셨으면 이 줄만 따로 돌리셔도 됩니다.
+-- ----------------------------------------------------------
+alter table sessions add column if not exists pending text;
