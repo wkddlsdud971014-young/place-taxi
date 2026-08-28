@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 const 탭 = [
   { href: "/", label: "일반 접수", icon: "📋", desc: "칸을 채운다" },
   { href: "/bot", label: "챗봇 접수", icon: "💬", desc: "말로 한다" },
+  { href: "/bot2", label: "봇2", icon: "🧾", desc: "대화가 곧 기록" },
 ];
 
 // 채점 기준을 화면에 그대로 띄웁니다. 보는 사람이 찾아다니지 않게.
@@ -14,7 +15,7 @@ const 검증 = ["두 블록 연계 (장소 ➔ 택시)", "도착지 자동 이�
 export function Nav() {
   const path = usePathname();
   // 봇 탭에서는 머리를 접습니다. 안 접으면 채팅창이 화면 밖으로 밀립니다.
-  const 접기 = path === "/bot";
+  const 접기 = path === "/bot" || path === "/bot2";
   return (
     <header className="hero">
       <div className={cn("mx-auto max-w-6xl px-6", 접기 ? "pt-5 pb-4" : "pt-10 pb-6")}>

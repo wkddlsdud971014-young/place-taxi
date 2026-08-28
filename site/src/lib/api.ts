@@ -1,6 +1,6 @@
 // db.py 와 똑같은 일을 하는 자바스크립트판입니다.
 // 웹(여기) 과 봇(파이썬) 이 같은 표를 씁니다.
-import { sb, Place, Driver, Ride } from "./supabase";
+import { sb, Place, Driver, Ride, Session } from "./supabase";
 
 const 아무거나 = (v?: string) => !v || v === "dontcare";
 
@@ -99,4 +99,23 @@ export async function recentRides(limit = 10): Promise<Ride[]> {
   const { data } = await sb.from("rides").select("*")
     .order("id", { ascending: false }).limit(limit);
   return data ?? [];
+}
+
+// ----------------------------------------------------------
+//  메모판 읽기 (봇2)
+//  쓰기는 안 합니다. 쓰는 것은 봇뿐이고 웹은 보기만 합니다.
+// ----------------------------------------------------------
+export async function getSession(code: string): Promise<Session | null> {
+  const { data } = await sb.from("sessions").select("*")
+    .eq("code", code.trim()).maybeSingle();
+  return (data as Session) ?? null;
+}
+
+// 봇 주소는 settings 표에 있습니다. 코드에 안 박아둔 이유는
+// gradio 공개 주소가 72시간마다 바뀌기 때문입니다. 창고에 두면
+// 봇을 껐다 켜기만 하면 웹이 새 주소를 따라갑니다.
+export async function getSetting(key: string): Promise<string | null> {
+  const { data } = await sb.from("settings").select("value")
+    .eq("key", key).maybeSingle();
+  return (data?.value as string | undefined) ?? null;
 }

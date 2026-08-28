@@ -33,3 +33,18 @@ export type Ride = {
   change_count: number;
   created_at: string;
 };
+
+// 메모판. 봇2 가 대화하면서 여기에 쌓고, 이 웹이 그것을 읽어서 보여줍니다.
+// 봇과 웹이 대화를 주고받지 않는데도 화면이 채워지는 이유가 이 표입니다.
+export type Session = {
+  code: string;
+  place_kind: string | null;
+  place_name: string | null;
+  pickup: string | null;
+  dropoff: string | null;
+  request_time: string | null;
+  carried: boolean;
+  ride_id: number | null;
+  turns: number;
+  updated_at: string;
+};
