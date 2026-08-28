@@ -421,4 +421,15 @@ if __name__ == "__main__":
     # SHARE=1 을 붙여 켜면 밖에서 들어올 수 있는 공개 주소가 하나 더 나옵니다.
     #   ./.venv/bin/python bot.py          -> 내 컴퓨터에서만
     #   SHARE=1 ./.venv/bin/python bot.py  -> 공개 주소도 같이
-    demo.launch(share=os.getenv("SHARE") == "1", server_port=7871, show_api=False)
+    앱, 로컬주소, 공개주소 = demo.launch(
+        share=os.getenv("SHARE") == "1", server_port=7871, show_api=False,
+        prevent_thread_lock=True)
+    # 켜질 때 내 주소를 창고에 적어 둡니다. 웹사이트가 이것을 읽어 갑니다.
+    # gradio 의 공개 주소는 72시간마다 바뀌는데, 창고에 두면
+    # 주소가 바뀌어도 웹을 다시 배포하지 않아도 됩니다(260828).
+    try:
+        db.set_setting("bot_url", 공개주소 or 로컬주소)
+        print(f"\n창고에 주소를 적었습니다 → {공개주소 or 로컬주소}\n")
+    except Exception as e:
+        print(f"\n주소 기록 실패(봇은 그대로 돕니다): {e}\n")
+    demo.block_thread()

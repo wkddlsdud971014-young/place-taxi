@@ -140,3 +140,80 @@ def get_ride(ride_id):
 def recent_rides(limit=10):
     """최근 호출 목록. 웹과 봇에서 만든 것이 한 곳에 섞여 보입니다."""
     return sb().table("rides").select("*").order("id", desc=True).limit(limit).execute().data
+
+
+# ================================================================
+#  4번 블록 - 메모판 (봇2 · 챌린지 2)
+#
+#  어제 봇은 슬롯을 봇 안(gr.State)에 두었습니다.
+#  새로고침하면 날아가고, 웹에서는 볼 수 없었습니다.
+#  이제 슬롯이 창고에 삽니다. 봇은 말 한 번마다
+#  여기서 꺼내 읽고 -> 한 칸 채우고 -> 다시 적습니다.
+#  그래서 봇이 아무것도 기억하지 않아도 대화가 이어집니다.
+#
+#  code(입장 코드)가 손님을 가르는 칸막이입니다. 회원가입 대신 쓰는 아이디입니다.
+# ================================================================
+from datetime import datetime, timezone
+
+슬롯칸 = ["place_kind", "place_name", "pickup", "dropoff", "request_time"]
+_저장가능 = 슬롯칸 + ["carried", "ride_id", "turns"]
+
+
+def _지금():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def get_session(code):
+    """입장 코드로 메모판을 꺼냅니다. 그 코드가 처음이면 새로 한 장 만듭니다."""
+    code = str(code).strip()
+    rows = sb().table("sessions").select("*").eq("code", code).execute().data
+    if rows:
+        return rows[0]
+    return sb().table("sessions").insert({"code": code}).execute().data[0]
+
+
+def save_session(code, 값들):
+    """바뀐 칸만 적습니다. 값이 안 온 칸은 안 건드립니다.
+
+    한 칸씩만 덮어쓰는 것이 중요합니다. 통째로 갈아끼우면
+    이번 말에 안 나온 칸이 지워집니다.
+    """
+    fields = {k: v for k, v in 값들.items() if k in _저장가능}
+    if not fields:
+        return get_session(code)
+    get_session(code)                       # 줄이 없으면 먼저 만들어 둡니다
+    fields["updated_at"] = _지금()
+    return sb().table("sessions").update(fields).eq(
+        "code", str(code).strip()).execute().data[0]
+
+
+def clear_session(code):
+    """내 메모만 지웁니다. 남의 입장 코드는 안 건드립니다."""
+    빈칸 = {k: None for k in 슬롯칸}
+    빈칸.update({"carried": False, "ride_id": None, "turns": 0, "updated_at": _지금()})
+    get_session(code)
+    return sb().table("sessions").update(빈칸).eq(
+        "code", str(code).strip()).execute().data[0]
+
+
+def 다찼나(메모):
+    """5칸이 전부 찼으면 True. 이때만 영수증을 낼 수 있습니다."""
+    return all(메모.get(k) for k in 슬롯칸)
+
+
+# ----------------------------------------------------------
+#  봇 주소도 창고에 둡니다.
+#
+#  gradio 의 공개 주소(*.gradio.live)는 72시간마다 바뀝니다.
+#  코드나 .env 에 박아두면 바뀔 때마다 웹을 다시 배포해야 합니다.
+#  창고에 두면 봇을 껐다 켜기만 하면 웹이 알아서 새 주소를 따라옵니다.
+#  슬롯을 gr.State 에서 창고로 옮긴 것과 똑같은 이야기입니다.
+# ----------------------------------------------------------
+def set_setting(key, value):
+    return sb().table("settings").upsert(
+        {"key": key, "value": value, "updated_at": _지금()}).execute().data[0]
+
+
+def get_setting(key):
+    rows = sb().table("settings").select("value").eq("key", key).execute().data
+    return rows[0]["value"] if rows else None
