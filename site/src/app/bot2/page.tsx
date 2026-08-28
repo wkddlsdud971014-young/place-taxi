@@ -30,6 +30,13 @@ export default function Bot2Page() {
   const [메모, set메모] = useState<Session | null>(null);
   const [봇주소, set봇주소] = useState<string | null>(null);
   const [잰때, set잰때] = useState("");
+  // 글자를 칠 때마다 iframe 을 다시 띄우면 봇이 계속 새로 켜집니다.
+  // 0.6초 쉬었을 때만 봇에게 넘깁니다.
+  const [적용코드, set적용코드] = useState("1");
+  useEffect(() => {
+    const t = setTimeout(() => set적용코드(코드.trim() || "1"), 600);
+    return () => clearTimeout(t);
+  }, [코드]);
 
   // 봇 주소는 창고에서 읽습니다. 코드에 안 박아둔 이유는
   // gradio 공개 주소가 72시간마다 바뀌기 때문입니다(260828).
@@ -54,7 +61,11 @@ export default function Bot2Page() {
   }, [읽기]);
 
   const 찬것 = 메모 ? 칸.filter((c) => 메모[c.key]).length : 0;
-  const 봇 = 봇주소 ? `${봇주소.replace(/\/$/, "")}/?__theme=light` : null;
+  // 입장 코드를 주소에 실어 보냅니다. 봇은 이것을 읽어서 같은 손님에게 적습니다.
+  // 예전에는 봇 안에도 입장 코드 칸이 있어서 둘이 따로 놀았습니다(260828).
+  const 봇 = 봇주소
+    ? `${봇주소.replace(/\/$/, "")}/?code=${encodeURIComponent(적용코드)}&__theme=light`
+    : null;
 
   return (
     <div className="space-y-3">
@@ -62,6 +73,9 @@ export default function Bot2Page() {
         <div className="w-32">
           <Label htmlFor="code" className="text-xs">입장 코드</Label>
           <Input id="code" value={코드} onChange={(e) => set코드(e.target.value)} />
+          {코드.trim() !== 적용코드 && (
+            <span className="text-[11px] text-muted-foreground">봇에게 넘기는 중…</span>
+          )}
         </div>
         <p className="pb-2 text-sm text-muted-foreground">
           왼쪽은 내 컴퓨터에서 도는 파이썬, 오른쪽은 이 웹사이트입니다.{" "}
@@ -73,6 +87,7 @@ export default function Bot2Page() {
         <div className="lg:col-span-3">
           {봇 ? (
             <iframe
+              key={적용코드}
               src={봇}
               className="h-[560px] w-full rounded-xl border bg-white"
               title="봇2"
