@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    actor U as 🙋 손님<br/>user
+    participant W as 🌐 웹사이트<br/>Vercel
+    participant B as 💬 봇2<br/>내 컴퓨터
+    participant C as 📄 Context<br/>이번 턴만
+    participant G as ✨ Gemini
+    participant D as 🗄️ Supabase<br/>🧠 Memory 가 여기 산다
+
+    rect rgb(238, 238, 238)
+    Note over B,D: 준비 · 주소를 코드에 안 박는다
+    B->>D: 켜질 때 내 gradio 주소 기록
+    W->>D: 주소 읽기
+    W-->>U: 채팅창을 웹에 끼워 보여줌
+    end
+
+    rect rgb(255, 245, 210)
+    Note over U,D: 1턴 · 입장 코드 5
+    U->>B: "성수동 파스타집 찾아줘"
+    B->>D: sessions[5] 읽기
+    D-->>B: 빈칸 5개
+    B->>C: 슬롯 + 이번 말만<br/>대화 기록은 안 넣는다
+    C->>G: 1콜
+    G-->>B: 장소-종류 = 식당
+    B->>D: sessions[5] 저장
+    Note over B: 🧠 여기서 봇의 뇌가 사라진다
+    B-->>U: "어느 지역인가요?"
+    end
+
+    Note over U,D: 1장 끝 · 봇은 아무것도 기억 못 하고 창고에만 남았다

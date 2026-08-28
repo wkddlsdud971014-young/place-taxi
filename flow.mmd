@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor U as 🙋 손님<br/>user
+    participant B as 💬 봇
+    participant M as 🧠 Memory<br/>계속 남는다
+    participant C as 📄 Context<br/>이번 턴만
+    participant G as ✨ Gemini
+    participant D as 🗄️ 창고
+    actor A as 👔 관리자<br/>callcenter
+
+    rect rgb(255, 245, 210)
+    Note over U,D: 1턴 · 장소 접수
+    U->>B: "파스타집 예약해줘"
+    B->>M: 뭐가 쌓였나?
+    M-->>B: 비어 있다
+    B->>C: 이름 없음 → '거기' 규칙 뺀다
+    C->>G: 말 + 골라 담은 규칙
+    G-->>D: 식당 검색 · 예약
+    D-->>M: ⭐ 이름 = 파스타집 저장
+    B-->>U: "예약했습니다"
+    end
+
+    rect rgb(214, 236, 255)
+    Note over U,A: 2턴 · 택시 배차<br/>식당 이름을 다시 말하지 않는다
+    U->>B: "거기로 택시 불러줘"
+    B->>M: 뭐가 쌓였나?
+    M-->>C: 이름 있다 → '거기' = 파스타집
+    C->>G: 말 + '거기' 규칙
+    G-->>D: 도착지 = 파스타집 · carried = true
+    D-->>U: 기사 김민수 배차
+    end
+
+    A->>D: 호출 기록 조회
+    D-->>A: 🔵 이월됨 표시

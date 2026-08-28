@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor U as 🙋 손님<br/>user
+    participant W as 🌐 웹사이트<br/>Vercel
+    participant B as 💬 봇2<br/>내 컴퓨터
+    participant C as 📄 Context<br/>이번 턴만
+    participant G as ✨ Gemini
+    participant D as 🗄️ Supabase<br/>🧠 Memory 가 여기 산다
+    actor A as 👔 관리자<br/>callcenter
+
+    Note over U,D: 앞 장에서 창고에 장소-종류 = 식당 · 장소-이름 = 파스타집 이 쌓였다
+
+    rect rgb(214, 236, 255)
+    Note over U,D: 2턴 · 뇌가 없는데 '거기'를 알아듣는다
+    U->>B: "거기로 택시, 강남역 7시"
+    B->>D: sessions[5] 읽기
+    D-->>B: 장소-이름 = 파스타집 남아 있다
+    B->>C: 슬롯 + '거기' = 파스타집
+    C->>G: 1콜
+    G-->>B: 도착지 = 파스타집
+    B->>D: sessions[5] 저장 · 5칸 다 참
+    end
+
+    rect rgb(220, 245, 220)
+    Note over U,A: 완성 · 영수증
+    U->>B: 보내기
+    B->>D: rides 생성 · source=bot2 · carried=true
+    B-->>U: 🧾 영수증
+    W->>D: 2초마다 sessions[5] 읽기
+    W-->>U: 웹에서도 실시간으로 채워짐
+    A->>D: 호출 기록 조회
+    D-->>A: web · bot · bot2 로 구분됨
+    end
+
+    Note over U,D: 브라우저를 껐다 켜도 입장 코드 5 를 넣으면 그대로 돌아온다
